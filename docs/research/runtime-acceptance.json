@@ -1,0 +1,53 @@
+{
+  "recorded_at": "2026-11-18T15:52:26.130Z",
+  "plugin_id": "org.wordflowlab.mystery-lab",
+  "package_sha256": "2c93b9094f2660a96e5193224530bfbc078594f071b8c4b5057fd7df7147f606",
+  "host_version": "hetu 0.12.4",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "actions": [
+    "skills.read",
+    "save_project",
+    "reader_view",
+    "evaluate_hypotheses",
+    "check_mystery",
+    "compare_stages",
+    "locate_clue",
+    "put_proposition",
+    "put_witness",
+    "put_clue",
+    "put_testimony",
+    "put_hypothesis",
+    "put_stage",
+    "list_projects",
+    "get_source",
+    "get_operation",
+    "get_basis",
+    "build_context",
+    "create_handoff",
+    "compare_versions",
+    "export_project",
+    "remove_stage",
+    "remove_hypothesis",
+    "remove_testimony",
+    "remove_clue",
+    "remove_witness",
+    "remove_proposition",
+    "get_project"
+  ],
+  "skill_resources": 3,
+  "lifecycle": [
+    "install",
+    "disable",
+    "enable",
+    "uninstall",
+    "install"
+  ],
+  "fixed_history": true,
+  "CAS": true,
+  "original_key_recovery": true,
+  "artifact_sha256_verified": true,
+  "limits": [
+    "没有付费模型、作者采纳、定稿或Windows/Linux专业运行验收"
+  ]
+}
