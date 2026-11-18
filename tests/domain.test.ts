@@ -1,0 +1,18 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {scenario} from './support/scenario.ts';
+import {validate,clone} from '../src/domain/model.ts';
+import {visible,readerView,evaluate,checkMystery,readProfessional} from '../src/domain/professional.ts';
+test('阶段读者投影不包含作者真值、命题原文和未来线索',()=>{const p=scenario();p.propositions[0].statement='仅作者知道的秘密';p.clues[1].title='未来才揭示的钥匙';const text=JSON.stringify(readerView(p,'opening'));assert.ok(!text.includes('author_truth'));assert.ok(!text.includes('仅作者知道的秘密'));assert.ok(!text.includes('未来才揭示的钥匙'));assert.match(text,/邮戳日期/);});
+test('推演算法从不读取作者真值',()=>{const p=scenario();for(const prop of p.propositions)Object.defineProperty(prop,'author_truth',{get(){throw Error('不能读真相');}});assert.equal(evaluate(p,'opening').hypotheses[0].status,'contradicted');});
+test('未揭示假说前提保持未知，后续相容不表示唯一解',()=>{const p=scenario();assert.equal(evaluate(p,'opening').hypotheses[1].status,'undetermined');assert.equal(evaluate(p,'second-scene').hypotheses[1].status,'compatible');});
+test('同一命题的可靠支持与反驳并存保持证据冲突',()=>{const p=scenario();p.clues.push({...clone(p.clues[0]),id:'contrary',polarity:'supports'});p.stages[0].clue_ids.push('contrary');const r=evaluate(p,'opening').hypotheses[0];assert.equal(r.status,'undetermined');assert.equal(r.requirements[0].observation,'contested');});
+test('传闻和未知可靠度不能直接排除假说',()=>{for(const reliability of ['claimed','unknown']){const p=scenario();p.clues[0].reliability=reliability;assert.equal(evaluate(p,'opening').hypotheses[0].status,'undetermined');}});
+test('证词只在所有关联线索可见后呈现，空关联不泄漏',()=>{const p=scenario();p.testimonies.push({...clone(p.testimonies[0]),id:'hidden',statement:'未来证词',clue_ids:[]});assert.equal(readerView(p,'opening').testimonies.length,1);assert.ok(!JSON.stringify(readerView(p,'opening')).includes('未来证词'));});
+test('多阶段重复揭示只计一次，阶段排序独立于数组顺序',()=>{const p=scenario();p.stages[1].clue_ids.push('seal');p.stages.reverse();validate(p);assert.deepEqual(visible(p,'second-scene').map((x:any)=>x.id),['seal','key-mark']);});
+test('重复阶段顺序和重复阶段线索均拒绝',()=>{for(const what of ['order','clue']){const p=scenario();if(what==='order')p.stages[1].order=0;else p.stages[0].clue_ids.push('seal');assert.throws(()=>validate(p));}});
+test('证词的线索与命题不对应时拒绝',()=>{const p=scenario();p.testimonies[0].clue_ids=['key-mark'];assert.throws(()=>validate(p));});
+test('假说命题不存在或重复均拒绝',()=>{for(const what of ['missing','duplicate']){const p=scenario();if(what==='missing')p.hypotheses[0].requirements[0].proposition_id='missing';else p.hypotheses[0].requirements.push(clone(p.hypotheses[0].requirements[0]));assert.throws(()=>validate(p));}});
+test('空假说不构成自动通过，未知真相明确报告',()=>{const p=scenario();p.hypotheses[0].requirements=[];p.propositions[0].author_truth='unknown';assert.equal(evaluate(p,'opening').hypotheses[0].status,'undetermined');assert.deepEqual(checkMystery(p).unknown_truth_ids,['sender']);});
+test('作者真相冲突与未揭示线索分别记录，原稿不被改写',()=>{const p=scenario();p.propositions[0].author_truth='true';p.stages[1].clue_ids=[];const before=clone(p),r=checkMystery(p);assert.equal(r.author_conflicts[0].clue_id,'seal');assert.deepEqual(r.unrevealed_clue_ids,['key-mark']);assert.deepEqual(p,before);});
+test('阶段差异只呈现新可见材料，逆序拒绝',async()=>{const p=scenario(),r=await readProfessional('compare_stages',p,[],{from_stage_id:'opening',to_stage_id:'second-scene'},null);assert.deepEqual(r.newly_visible.map((x:any)=>x.id),['key-mark']);await assert.rejects(readProfessional('compare_stages',p,[],{from_stage_id:'second-scene',to_stage_id:'opening'},null));});

@@ -1,0 +1,11 @@
+import React,{useState} from 'react';
+type Props={p:any;tab:number;run:(f:()=>Promise<void>)=>Promise<void>;show:(a:string,i?:any)=>Promise<void>;[key:string]:any};
+const reliability=(s:string)=>({confirmed:'工程声明可靠',claimed:'仅有声称',unknown:'未知'} as any)[s];
+export function ProfessionalView({p,tab,run,show}:Props){
+ const [stage,setStage]=useState('');const stages=[...p.stages].sort((a:any,b:any)=>a.order-b.order),selected=stages.find(s=>s.id===stage)?.id??stages[0]?.id;
+ if(tab===0)return <section><p className="muted">作者视角。真相声明不自动成为正式设定，也不会进入阶段读者投影。</p>{p.propositions.map((v:any)=><article key={v.id}><h3>{v.statement}</h3><p>{({true:'作者声明为真',false:'作者声明为假',unknown:'真相尚未确定'} as any)[v.author_truth]}</p></article>)}</section>;
+ if(tab===1)return <section><h3>线索</h3>{p.clues.map((c:any)=><article key={c.id}><h3>{c.title}</h3><p className="muted">{reliability(c.reliability)}</p><button onClick={()=>void run(()=>show('locate_clue',{clue_id:c.id}))}>查看固定原文</button></article>)}<h3>证词</h3>{p.testimonies.map((t:any)=><article key={t.id}><h3>{p.witnesses.find((w:any)=>w.id===t.witness_id)?.name}</h3><blockquote>{t.statement}</blockquote></article>)}</section>;
+ if(tab===2)return <section><label>读到的阶段 <select aria-label="读者阶段" value={selected??''} onChange={e=>setStage(e.target.value)}>{stages.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}</select></label><p className="muted">只使用截至此阶段已经展示的线索。相容不等于唯一答案。</p><div className="actions"><button disabled={!selected} onClick={()=>void run(()=>show('reader_view',{stage_id:selected}))}>阅读此时可见信息</button><button disabled={!selected} onClick={()=>void run(()=>show('evaluate_hypotheses',{stage_id:selected}))}>推演此时假说</button></div></section>;
+ if(tab===3)return <section><div className="actions"><button onClick={()=>void run(()=>show('check_mystery'))}>检查揭示与证据</button>{stages.length>=2&&<button onClick={()=>void run(()=>show('compare_stages',{from_stage_id:stages[0].id,to_stage_id:stages.at(-1).id}))}>比较首尾阶段</button>}</div><ol className="stages">{stages.map(s=><li key={s.id}><h3>{s.title}</h3><p>{s.clue_ids.map((id:string)=>p.clues.find((c:any)=>c.id===id)?.title).join('；')||'此阶段没有新增线索'}</p></li>)}</ol></section>;
+ return null;
+}
